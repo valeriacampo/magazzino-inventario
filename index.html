@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestione Magazzino</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            text-align: center;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        input {
+            margin: 5px;
+            padding: 8px;
+            width: 80%;
+            max-width: 300px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin: 10px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .export-button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            margin: 10px auto;
+        }
+        .export-button:hover {
+            background-color: #0056b3;
+        }
+        table {
+            width: 90%;
+            margin: 20px auto;
+            border-collapse: collapse;
+            background: white;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+        th {
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        tr:nth-child(even) {
+            background: #f2f2f2;
+        }
+        .actions button {
+            background-color: #ffc107;
+            margin-right: 5px;
+        }
+        .actions button:last-child {
+            background-color: #FFFFFF;
+        }
+        .editable {
+            background-color: #fff8c6;
+            border: 1px solid #ccc;
+            padding: 5px;
+            width: 100%;
+        }
+    </style>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } 
+            from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
+        import * as XLSX from "https://cdn.sheetjs.com/xlsx-0.18.5/package/xlsx.mjs";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyBHXifL2MuXGLYkQPiIZ99FHDLI2W0NS0g",
+  authDomain: "magazzinocampo-91fc9.firebaseapp.com",
+  projectId: "magazzinocampo-91fc9",
+  storageBucket: "magazzinocampo-91fc9.firebasestorage.app",
+  messagingSenderId: "499950061528",
+  appId: "1:499950061528:web:cdd5a6cbb260cde93794ad"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.addProduct = async function(name, quantity, model) {
+            try {
+                await addDoc(collection(db, "prodotti"), {
+                    name: name,
+                    quantity: Number(quantity),
+                    model: model
+                });
+                alert("Prodotto aggiunto con successo!");
+                loadProducts();
+            } catch (e) {
+                console.error("Errore nell'aggiunta del prodotto: ", e);
+            }
+        };
+
+        window.loadProducts = async function() {
+            const querySnapshot = await getDocs(collection(db, "prodotti"));
+            let tableBody = document.getElementById("inventoryTableBody");
+            let searchQuery = document.getElementById("search").value.toLowerCase();
+            tableBody.innerHTML = "";
+            querySnapshot.forEach((doc) => {
+                let data = doc.data();
+                if (data.name.toLowerCase().includes(searchQuery) || data.model.toLowerCase().includes(searchQuery)) {
+                    let row = `
+                        <tr>
+                          <td contenteditable="true" class="editable" onblur="updateProduct('${doc.id}', 'name', this.innerText)">${data.name}</td>
+                          <td contenteditable="true" class="editable" onblur="updateProduct('${doc.id}', 'quantity', this.innerText)">${data.quantity}</td>
+                          <td contenteditable="true" class="editable" onblur="updateProduct('${doc.id}', 'model', this.innerText)">${data.model}</td>
+                          <td class="actions">
+                            <button onclick="deleteProduct('${doc.id}')">🗑️</button>
+                          </td>
+                        </tr>`;
+                    tableBody.innerHTML += row;
+                }
+            });
+        };
+
+        window.exportToExcel = async function() {
+            const querySnapshot = await getDocs(collection(db, "prodotti"));
+            let data = [];
+            querySnapshot.forEach((doc) => {
+                data.push(doc.data());
+            });
+            
+            const worksheet = XLSX.utils.json_to_sheet(data);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario");
+            XLSX.writeFile(workbook, "Inventario.xlsx");
+        };
+
+        window.deleteProduct = async function(id) {
+            if (confirm("Sei sicuro di voler eliminare questo prodotto?")) {
+                await deleteDoc(doc(db, "prodotti", id));
+                alert("Prodotto eliminato!");
+                loadProducts();
+            }
+        };
+
+        window.updateProduct = async function(id, field, newValue) {
+            await updateDoc(doc(db, "prodotti", id), {
+                [field]: field === 'quantity' ? Number(newValue) : newValue
+            });
+        };
+
+        window.onload = loadProducts;
+    </script>
+</head>
+<body>
+    <h1>Gestione Magazzino</h1>
+    
+    <button class="export-button" onclick="exportToExcel()">📥 Esporta</button>
+    
+    <h2>Aggiungi Prodotto</h2>
+    <input type="text" id="name" placeholder="Nome prodotto">
+    <input type="number" id="quantity" placeholder="Quantità">
+    <input type="text" id="model" placeholder="Modello auto">
+    <button onclick="addProduct(document.getElementById('name').value, document.getElementById('quantity').value, document.getElementById('model').value)">Aggiungi</button>
+    
+    <h2>Ricerca</h2>
+    <input type="text" id="search" placeholder="Cerca un prodotto..." onkeyup="loadProducts()">
+
+    <h2>Inventario</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Nome Prodotto</th>
+                <th>Quantità</th>
+                <th>Modello Auto</th>
+                <th>Azioni</th>
+            </tr>
+        </thead>
+        <tbody id="inventoryTableBody">
+        </tbody>
+    </table>
+</body>
+</html>
