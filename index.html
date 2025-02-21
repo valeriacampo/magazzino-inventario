@@ -23,7 +23,7 @@
             border-radius: 5px;
         }
         button {
-            background-color: #000000;
+            background-color: #000;
             color: white;
             border: none;
             padding: 10px 15px;
@@ -33,20 +33,6 @@
         }
         button:hover {
             background-color: #218838;
-        }
-        .export-button {
-            background-color: #ACBFEF;
-            color: white;
-            padding: 10px 15px;
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            margin: 10px auto;
-        }
-        .export-button:hover {
-            background-color: #275D9C;
         }
         table {
             width: 100%;
@@ -85,6 +71,9 @@
             width: 100%;
             font-size: 12px;
         }
+        .editable:focus {
+            background-color: #ffffcc;
+        }
     </style>
 
     <script type="module">
@@ -94,19 +83,33 @@
         import * as XLSX from "https://cdn.sheetjs.com/xlsx-0.18.5/package/xlsx.mjs";
 
         const firebaseConfig = {
-          apiKey: "AIzaSyBHXifL2MuXGLYkQPiIZ99FHDLI2W0NS0g",
-  authDomain: "magazzinocampo-91fc9.firebaseapp.com",
-  projectId: "magazzinocampo-91fc9",
-  storageBucket: "magazzinocampo-91fc9.firebasestorage.app",
-  messagingSenderId: "499950061528",
-  appId: "1:499950061528:web:cdd5a6cbb260cde93794ad"
-
+            apiKey: "AIzaSyBHXifL2MuXGLYkQPiIZ99FHDLI2W0NS0g",
+            authDomain: "magazzinocampo-91fc9.firebaseapp.com",
+            projectId: "magazzinocampo-91fc9",
+            storageBucket: "magazzinocampo-91fc9.appspot.com",
+            messagingSenderId: "499950061528",
+            appId: "1:499950061528:web:cdd5a6cbb260cde93794ad"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        window.addProduct = async function(name, quantity, brand, model) {
+        window.addProduct = async function() {
+            const name = document.getElementById('name').value.trim();
+            const quantity = document.getElementById('quantity').value.trim();
+            const brand = document.getElementById('brand').value.trim();
+            const model = document.getElementById('model').value.trim();
+
+            if (!name || !quantity || !brand || !model) {
+                alert("Tutti i campi sono obbligatori!");
+                return;
+            }
+
+            if (isNaN(quantity) || Number(quantity) < 0) {
+                alert("La quantità deve essere un numero positivo!");
+                return;
+            }
+
             try {
                 await addDoc(collection(db, "prodotti"), {
                     name: name,
@@ -114,7 +117,15 @@
                     brand: brand,
                     model: model
                 });
+
                 alert("Prodotto aggiunto con successo!");
+                
+                // Svuota i campi dopo l'aggiunta
+                document.getElementById('name').value = "";
+                document.getElementById('quantity').value = "";
+                document.getElementById('brand').value = "";
+                document.getElementById('model').value = "";
+
                 loadProducts();
             } catch (e) {
                 console.error("Errore nell'aggiunta del prodotto: ", e);
@@ -125,9 +136,10 @@
             const querySnapshot = await getDocs(collection(db, "prodotti"));
             let tableBody = document.getElementById("inventoryTableBody");
             tableBody.innerHTML = "";
+
             querySnapshot.forEach((doc) => {
                 let data = doc.data();
-                let row = 
+                let row = `
                     <tr>
                       <td contenteditable="true" class="editable" onblur="updateProduct('${doc.id}', 'name', this.innerText)">${data.name}</td>
                       <td contenteditable="true" class="editable" onblur="updateProduct('${doc.id}', 'quantity', this.innerText)">${data.quantity}</td>
@@ -136,43 +148,72 @@
                       <td class="actions">
                         <button onclick="deleteProduct('${doc.id}')">🗑️</button>
                       </td>
-                    </tr>;
+                    </tr>`;
                 tableBody.innerHTML += row;
             });
         };
 
         window.updateProduct = async function(id, field, newValue) {
-            await updateDoc(doc(db, "prodotti", id), {
-                [field]: field === 'quantity' ? Number(newValue) : newValue
-            });
+            newValue = newValue.trim();
+
+            if (field === 'quantity') {
+                if (isNaN(newValue) || Number(newValue) < 0) {
+                    alert("Errore: la quantità deve essere un numero positivo!");
+                    loadProducts(); // Ricarica per ripristinare il valore precedente
+                    return;
+                }
+                newValue = Number(newValue);
+            }
+
+            try {
+                await updateDoc(doc(db, "prodotti", id), {
+                    [field]: newValue
+                });
+            } catch (e) {
+                console.error("Errore nell'aggiornamento del prodotto:", e);
+            }
         };
 
-        window.onload = loadProducts;
+        window.deleteProduct = async function(id) {
+            if (!confirm("Sei sicuro di voler eliminare questo prodotto?")) {
+                return;
+            }
+
+            try {
+                await deleteDoc(doc(db, "prodotti", id));
+                alert("Prodotto eliminato con successo!");
+                loadProducts();
+            } catch (e) {
+                console.error("Errore nell'eliminazione del prodotto:", e);
+            }
+        };
+
+        document.addEventListener("DOMContentLoaded", function() {
+            loadProducts();
+        });
+
     </script>
 </head>
 <body>
     <h1>Magazzino Carrozzeria Campo</h1>
-    
-    
+
     <input type="text" id="name" placeholder="Nome prodotto">
     <input type="number" id="quantity" placeholder="Quantità">
     <input type="text" id="brand" placeholder="Marca auto">
     <input type="text" id="model" placeholder="Modello auto">
-    <button onclick="addProduct(document.getElementById('name').value, document.getElementById('quantity').value, document.getElementById('brand').value, document.getElementById('model').value)">Aggiungi</button>
-    
-   
+    <button onclick="addProduct()">Aggiungi</button>
+
     <table>
         <thead>
             <tr>
-                <th style="width: 25%">Prodotto</th>
-                <th style="width: 15%">Quantità</th>
-                <th style="width: 20%">Marca Auto</th>
-                <th style="width: 20%">Modello Auto</th>
-                <th style="width: 10%">Azioni</th>
+                <th>Prodotto</th>
+                <th>Quantità</th>
+                <th>Marca Auto</th>
+                <th>Modello Auto</th>
+                <th>Azioni</th>
             </tr>
         </thead>
-        <tbody id="inventoryTableBody">
-        </tbody>
+        <tbody id="inventoryTableBody"></tbody>
     </table>
 </body>
 </html>
