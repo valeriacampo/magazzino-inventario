@@ -100,10 +100,16 @@
             const brand = document.getElementById('brand').value.trim();
             const model = document.getElementById('model').value.trim();
 
-            if (!name || !quantity || !brand || !model) {
-                alert("Tutti i campi sono obbligatori!");
-                return;
-            }
+            if (!name.trim()) {
+    alert("Il nome del prodotto è obbligatorio!");
+    return;
+}
+
+// Imposta valori predefiniti per i campi vuoti
+quantity = quantity.trim() === "" ? 0 : Number(quantity);
+brand = brand.trim() || "";
+model = model.trim() || "";
+
 
             if (isNaN(quantity) || Number(quantity) < 0) {
                 alert("La quantità deve essere un numero positivo!");
