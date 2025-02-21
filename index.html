@@ -55,6 +55,23 @@
         tr:nth-child(even) {
             background: #f2f2f2;
         }
+        .actions button {
+            background-color: red;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .actions button:hover {
+            background-color: darkred;
+        }
+        .editable {
+            cursor: pointer;
+        }
+        .note {
+            display: none;
+        }
     </style>
 
     <script type="module">
@@ -79,6 +96,7 @@
             let quantity = document.getElementById("quantity").value;
             let brand = document.getElementById("brand").value;
             let model = document.getElementById("model").value;
+            let note = "";
 
             if (!name) {
                 alert("Il nome del prodotto è obbligatorio!");
@@ -90,13 +108,19 @@
                     name: name,
                     quantity: quantity ? Number(quantity) : null,
                     brand: brand || null,
-                    model: model || null
+                    model: model || null,
+                    note: note
                 });
                 alert("Prodotto aggiunto con successo!");
                 loadProducts();
             } catch (e) {
                 console.error("Errore nell'aggiunta del prodotto: ", e);
             }
+        };
+
+        window.toggleNote = function(id) {
+            let noteRow = document.getElementById("note-" + id);
+            noteRow.style.display = noteRow.style.display === "none" ? "table-row" : "none";
         };
 
         window.loadProducts = async function() {
@@ -108,24 +132,26 @@
                 let row = `
                     <tr>
                         <td>${data.name}</td>
-                        <td>${data.quantity !== null ? data.quantity : ''}</td>
+                        <td class="editable" contenteditable="true" onblur="updateQuantity('${doc.id}', this.innerText)">${data.quantity !== null ? data.quantity : ''}</td>
                         <td>${data.brand !== null ? data.brand : ''}</td>
                         <td>${data.model !== null ? data.model : ''}</td>
                         <td class="actions">
+                            <button onclick="toggleNote('${doc.id}')">⬇</button>
                             <button onclick="deleteProduct('${doc.id}')">🗑️</button>
                         </td>
+                    </tr>
+                    <tr id="note-${doc.id}" class="note">
+                        <td colspan="5"><textarea onblur="updateNote('${doc.id}', this.value)">${data.note || ''}</textarea></td>
                     </tr>`;
                 tableBody.innerHTML += row;
             });
         };
 
-        window.deleteProduct = async function(id) {
+        window.updateNote = async function(id, newNote) {
             try {
-                await deleteDoc(doc(db, "prodotti", id));
-                alert("Prodotto eliminato con successo!");
-                loadProducts();
+                await updateDoc(doc(db, "prodotti", id), { note: newNote });
             } catch (e) {
-                console.error("Errore nella cancellazione del prodotto: ", e);
+                console.error("Errore nella modifica della nota: ", e);
             }
         };
 
