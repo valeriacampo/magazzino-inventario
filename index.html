@@ -34,53 +34,12 @@
         button:hover {
             background-color: #218838;
         }
-        table {
-            width: 100%;
-            margin: 20px auto;
-            border-collapse: collapse;
-            background: white;
-        }
-        th, td {
-            padding: 8px;
-            border: 1px solid #ccc;
-            font-size: 14px;
-            text-align: center;
-            white-space: nowrap;
-        }
-        th {
-            background: #034C8C;
-            color: white;
-            cursor: pointer;
-        }
-        tr:nth-child(even) {
-            background: #f2f2f2;
-        }
-        .actions button {
-            background-color: #ffc107;
-            margin-right: 5px;
-            padding: 5px;
-            font-size: 12px;
-        }
-        .actions button:last-child {
-            background-color: #FFFFFF;
-        }
-        .editable {
-            background-color: #FFFFFF;
-            border: 1px solid #ccc;
-            padding: 5px;
-            width: 100%;
-            font-size: 12px;
-        }
-        .editable:focus {
-            background-color: #ffffcc;
-        }
     </style>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } 
+        import { getFirestore, collection, addDoc } 
             from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
-        import * as XLSX from "https://cdn.sheetjs.com/xlsx-0.18.5/package/xlsx.mjs";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBHXifL2MuXGLYkQPiIZ99FHDLI2W0NS0g",
@@ -96,108 +55,37 @@
 
         window.addProduct = async function() {
             const name = document.getElementById('name').value.trim();
-            const quantity = document.getElementById('quantity').value.trim();
-            const brand = document.getElementById('brand').value.trim();
-            const model = document.getElementById('model').value.trim();
+            let quantity = document.getElementById('quantity').value.trim();
+            let brand = document.getElementById('brand').value.trim();
+            let model = document.getElementById('model').value.trim();
 
-            if (!name.trim()) {
-    alert("Il nome del prodotto è obbligatorio!");
-    return;
-}
-
-// Imposta valori predefiniti per i campi vuoti
-quantity = quantity.trim() === "" ? 0 : Number(quantity);
-brand = brand.trim() || "";
-model = model.trim() || "";
-
-
-            if (isNaN(quantity) || Number(quantity) < 0) {
-                alert("La quantità deve essere un numero positivo!");
+            if (!name) {
+                alert("Il nome del prodotto è obbligatorio!");
                 return;
             }
+
+            quantity = quantity === "" ? 0 : Number(quantity);
+            brand = brand || "";
+            model = model || "";
 
             try {
                 await addDoc(collection(db, "prodotti"), {
                     name: name,
-                    quantity: Number(quantity),
+                    quantity: quantity,
                     brand: brand,
                     model: model
                 });
 
                 alert("Prodotto aggiunto con successo!");
-                
-                // Svuota i campi dopo l'aggiunta
                 document.getElementById('name').value = "";
                 document.getElementById('quantity').value = "";
                 document.getElementById('brand').value = "";
                 document.getElementById('model').value = "";
 
-                loadProducts();
             } catch (e) {
                 console.error("Errore nell'aggiunta del prodotto: ", e);
             }
         };
-
-        window.loadProducts = async function() {
-            const querySnapshot = await getDocs(collection(db, "prodotti"));
-            let tableBody = document.getElementById("inventoryTableBody");
-            tableBody.innerHTML = "";
-
-            querySnapshot.forEach((doc) => {
-                let data = doc.data();
-                let row = `
-                    <tr>
-                      <td contenteditable="true" class="editable" onblur="updateProduct('${doc.id}', 'name', this.innerText)">${data.name}</td>
-                      <td contenteditable="true" class="editable" onblur="updateProduct('${doc.id}', 'quantity', this.innerText)">${data.quantity}</td>
-                      <td contenteditable="true" class="editable" onblur="updateProduct('${doc.id}', 'brand', this.innerText)">${data.brand}</td>
-                      <td contenteditable="true" class="editable" onblur="updateProduct('${doc.id}', 'model', this.innerText)">${data.model}</td>
-                      <td class="actions">
-                        <button onclick="deleteProduct('${doc.id}')">🗑️</button>
-                      </td>
-                    </tr>`;
-                tableBody.innerHTML += row;
-            });
-        };
-
-        window.updateProduct = async function(id, field, newValue) {
-            newValue = newValue.trim();
-
-            if (field === 'quantity') {
-                if (isNaN(newValue) || Number(newValue) < 0) {
-                    alert("Errore: la quantità deve essere un numero positivo!");
-                    loadProducts(); // Ricarica per ripristinare il valore precedente
-                    return;
-                }
-                newValue = Number(newValue);
-            }
-
-            try {
-                await updateDoc(doc(db, "prodotti", id), {
-                    [field]: newValue
-                });
-            } catch (e) {
-                console.error("Errore nell'aggiornamento del prodotto:", e);
-            }
-        };
-
-        window.deleteProduct = async function(id) {
-            if (!confirm("Sei sicuro di voler eliminare questo prodotto?")) {
-                return;
-            }
-
-            try {
-                await deleteDoc(doc(db, "prodotti", id));
-                alert("Prodotto eliminato con successo!");
-                loadProducts();
-            } catch (e) {
-                console.error("Errore nell'eliminazione del prodotto:", e);
-            }
-        };
-
-        document.addEventListener("DOMContentLoaded", function() {
-            loadProducts();
-        });
-
     </script>
 </head>
 <body>
@@ -208,18 +96,5 @@ model = model.trim() || "";
     <input type="text" id="brand" placeholder="Marca auto">
     <input type="text" id="model" placeholder="Modello auto">
     <button onclick="addProduct()">Aggiungi</button>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Prodotto</th>
-                <th>Quantità</th>
-                <th>Marca Auto</th>
-                <th>Modello Auto</th>
-                <th>Azioni</th>
-            </tr>
-        </thead>
-        <tbody id="inventoryTableBody"></tbody>
-    </table>
 </body>
 </html>
