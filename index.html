@@ -99,9 +99,37 @@
             }
         };
 
-        window.onload = async function() {
-            await loadProducts();
+        window.loadProducts = async function() {
+            const querySnapshot = await getDocs(collection(db, "prodotti"));
+            let tableBody = document.getElementById("inventoryTableBody");
+            tableBody.innerHTML = "";
+            querySnapshot.forEach((doc) => {
+                let data = doc.data();
+                let row = `
+                    <tr>
+                        <td>${data.name}</td>
+                        <td>${data.quantity !== null ? data.quantity : ''}</td>
+                        <td>${data.brand !== null ? data.brand : ''}</td>
+                        <td>${data.model !== null ? data.model : ''}</td>
+                        <td class="actions">
+                            <button onclick="deleteProduct('${doc.id}')">🗑️</button>
+                        </td>
+                    </tr>`;
+                tableBody.innerHTML += row;
+            });
         };
+
+        window.deleteProduct = async function(id) {
+            try {
+                await deleteDoc(doc(db, "prodotti", id));
+                alert("Prodotto eliminato con successo!");
+                loadProducts();
+            } catch (e) {
+                console.error("Errore nella cancellazione del prodotto: ", e);
+            }
+        };
+
+        window.onload = loadProducts;
     </script>
 </head>
 <body>
