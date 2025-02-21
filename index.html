@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+controlla questo codice: <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
@@ -23,7 +23,7 @@
             border-radius: 5px;
         }
         button {
-            background-color: #000;
+            background-color: #000000;
             color: white;
             border: none;
             padding: 10px 15px;
@@ -34,67 +34,145 @@
         button:hover {
             background-color: #218838;
         }
+        .export-button {
+            background-color: #ACBFEF;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            margin: 10px auto;
+        }
+        .export-button:hover {
+            background-color: #275D9C;
+        }
+        table {
+            width: 100%;
+            margin: 20px auto;
+            border-collapse: collapse;
+            background: white;
+        }
+        th, td {
+            padding: 8px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            text-align: center;
+            white-space: nowrap;
+        }
+        th {
+            background: #034C8C;
+            color: white;
+            cursor: pointer;
+        }
+        tr:nth-child(even) {
+            background: #f2f2f2;
+        }
+        .actions button {
+            background-color: #ffc107;
+            margin-right: 5px;
+            padding: 5px;
+            font-size: 12px;
+        }
+        .actions button:last-child {
+            background-color: #FFFFFF;
+        }
+        .editable {
+            background-color: #FFFFFF;
+            border: 1px solid #ccc;
+            padding: 5px;
+            width: 100%;
+            font-size: 12px;
+        }
     </style>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
-        import { getFirestore, collection, addDoc } 
+        import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } 
             from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
+        import * as XLSX from "https://cdn.sheetjs.com/xlsx-0.18.5/package/xlsx.mjs";
 
         const firebaseConfig = {
-            apiKey: "AIzaSyBHXifL2MuXGLYkQPiIZ99FHDLI2W0NS0g",
-            authDomain: "magazzinocampo-91fc9.firebaseapp.com",
-            projectId: "magazzinocampo-91fc9",
-            storageBucket: "magazzinocampo-91fc9.appspot.com",
-            messagingSenderId: "499950061528",
-            appId: "1:499950061528:web:cdd5a6cbb260cde93794ad"
+          apiKey: "AIzaSyBHXifL2MuXGLYkQPiIZ99FHDLI2W0NS0g",
+  authDomain: "magazzinocampo-91fc9.firebaseapp.com",
+  projectId: "magazzinocampo-91fc9",
+  storageBucket: "magazzinocampo-91fc9.firebasestorage.app",
+  messagingSenderId: "499950061528",
+  appId: "1:499950061528:web:cdd5a6cbb260cde93794ad"
+
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        window.addProduct = async function() {
-            const name = document.getElementById('name').value.trim();
-            let quantity = document.getElementById('quantity').value.trim();
-            let brand = document.getElementById('brand').value.trim();
-            let model = document.getElementById('model').value.trim();
-
-            if (!name) {
-                alert("Il nome del prodotto è obbligatorio!");
-                return;
-            }
-
-            quantity = quantity === "" ? 0 : Number(quantity);
-            brand = brand || "";
-            model = model || "";
-
+        window.addProduct = async function(name, quantity, brand, model) {
             try {
                 await addDoc(collection(db, "prodotti"), {
                     name: name,
-                    quantity: quantity,
+                    quantity: Number(quantity),
                     brand: brand,
                     model: model
                 });
-
                 alert("Prodotto aggiunto con successo!");
-                document.getElementById('name').value = "";
-                document.getElementById('quantity').value = "";
-                document.getElementById('brand').value = "";
-                document.getElementById('model').value = "";
-
+                loadProducts();
             } catch (e) {
                 console.error("Errore nell'aggiunta del prodotto: ", e);
             }
         };
+
+        window.loadProducts = async function() {
+            const querySnapshot = await getDocs(collection(db, "prodotti"));
+            let tableBody = document.getElementById("inventoryTableBody");
+            tableBody.innerHTML = "";
+            querySnapshot.forEach((doc) => {
+                let data = doc.data();
+                let row = 
+                    <tr>
+                      <td contenteditable="true" class="editable" onblur="updateProduct('${doc.id}', 'name', this.innerText)">${data.name}</td>
+                      <td contenteditable="true" class="editable" onblur="updateProduct('${doc.id}', 'quantity', this.innerText)">${data.quantity}</td>
+                      <td contenteditable="true" class="editable" onblur="updateProduct('${doc.id}', 'brand', this.innerText)">${data.brand}</td>
+                      <td contenteditable="true" class="editable" onblur="updateProduct('${doc.id}', 'model', this.innerText)">${data.model}</td>
+                      <td class="actions">
+                        <button onclick="deleteProduct('${doc.id}')">🗑️</button>
+                      </td>
+                    </tr>;
+                tableBody.innerHTML += row;
+            });
+        };
+
+        window.updateProduct = async function(id, field, newValue) {
+            await updateDoc(doc(db, "prodotti", id), {
+                [field]: field === 'quantity' ? Number(newValue) : newValue
+            });
+        };
+
+        window.onload = loadProducts;
     </script>
 </head>
 <body>
     <h1>Magazzino Carrozzeria Campo</h1>
-
+    
+    
     <input type="text" id="name" placeholder="Nome prodotto">
     <input type="number" id="quantity" placeholder="Quantità">
     <input type="text" id="brand" placeholder="Marca auto">
     <input type="text" id="model" placeholder="Modello auto">
-    <button onclick="addProduct()">Aggiungi</button>
+    <button onclick="addProduct(document.getElementById('name').value, document.getElementById('quantity').value, document.getElementById('brand').value, document.getElementById('model').value)">Aggiungi</button>
+    
+   
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 25%">Prodotto</th>
+                <th style="width: 15%">Quantità</th>
+                <th style="width: 20%">Marca Auto</th>
+                <th style="width: 20%">Modello Auto</th>
+                <th style="width: 10%">Azioni</th>
+            </tr>
+        </thead>
+        <tbody id="inventoryTableBody">
+        </tbody>
+    </table>
 </body>
 </html>
