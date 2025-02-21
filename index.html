@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="it">
 <head>
     <meta charset="UTF-8">
@@ -23,7 +23,7 @@
             border-radius: 5px;
         }
         button {
-            background-color: #000;
+            background-color: #000000;
             color: white;
             border: none;
             padding: 10px 15px;
@@ -34,18 +34,39 @@
         button:hover {
             background-color: #218838;
         }
+        table {
+            width: 100%;
+            margin: 20px auto;
+            border-collapse: collapse;
+            background: white;
+        }
+        th, td {
+            padding: 8px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            text-align: center;
+            white-space: nowrap;
+        }
+        th {
+            background: #034C8C;
+            color: white;
+            cursor: pointer;
+        }
+        tr:nth-child(even) {
+            background: #f2f2f2;
+        }
     </style>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
-        import { getFirestore, collection, addDoc } 
+        import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } 
             from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBHXifL2MuXGLYkQPiIZ99FHDLI2W0NS0g",
             authDomain: "magazzinocampo-91fc9.firebaseapp.com",
             projectId: "magazzinocampo-91fc9",
-            storageBucket: "magazzinocampo-91fc9.appspot.com",
+            storageBucket: "magazzinocampo-91fc9.firebasestorage.app",
             messagingSenderId: "499950061528",
             appId: "1:499950061528:web:cdd5a6cbb260cde93794ad"
         };
@@ -54,47 +75,56 @@
         const db = getFirestore(app);
 
         window.addProduct = async function() {
-            const name = document.getElementById('name').value.trim();
-            let quantity = document.getElementById('quantity').value.trim();
-            let brand = document.getElementById('brand').value.trim();
-            let model = document.getElementById('model').value.trim();
+            let name = document.getElementById("name").value.trim();
+            let quantity = document.getElementById("quantity").value;
+            let brand = document.getElementById("brand").value;
+            let model = document.getElementById("model").value;
 
             if (!name) {
                 alert("Il nome del prodotto è obbligatorio!");
                 return;
             }
 
-            quantity = quantity === "" ? 0 : Number(quantity);
-            brand = brand || "";
-            model = model || "";
-
             try {
                 await addDoc(collection(db, "prodotti"), {
                     name: name,
-                    quantity: quantity,
-                    brand: brand,
-                    model: model
+                    quantity: quantity ? Number(quantity) : null,
+                    brand: brand || null,
+                    model: model || null
                 });
-
                 alert("Prodotto aggiunto con successo!");
-                document.getElementById('name').value = "";
-                document.getElementById('quantity').value = "";
-                document.getElementById('brand').value = "";
-                document.getElementById('model').value = "";
-
+                loadProducts();
             } catch (e) {
                 console.error("Errore nell'aggiunta del prodotto: ", e);
             }
+        };
+
+        window.onload = async function() {
+            await loadProducts();
         };
     </script>
 </head>
 <body>
     <h1>Magazzino Carrozzeria Campo</h1>
-
-    <input type="text" id="name" placeholder="Nome prodotto">
+    
+    <input type="text" id="name" placeholder="Nome prodotto" required>
     <input type="number" id="quantity" placeholder="Quantità">
     <input type="text" id="brand" placeholder="Marca auto">
     <input type="text" id="model" placeholder="Modello auto">
     <button onclick="addProduct()">Aggiungi</button>
+    
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 25%">Prodotto</th>
+                <th style="width: 15%">Quantità</th>
+                <th style="width: 20%">Marca Auto</th>
+                <th style="width: 20%">Modello Auto</th>
+                <th style="width: 10%">Azioni</th>
+            </tr>
+        </thead>
+        <tbody id="inventoryTableBody">
+        </tbody>
+    </table>
 </body>
 </html>
