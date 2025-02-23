@@ -182,6 +182,22 @@
         window.onload = function() {
             loadProducts();
         };
+       window.searchProducts = function() {
+    let input = document.getElementById("search").value.toLowerCase();
+    let tableRows = document.querySelectorAll("#inventoryTableBody tr");
+
+    for (let i = 0; i < tableRows.length; i += 2) { // Salta le righe note (ogni prodotto ha due righe)
+        let productName = tableRows[i].cells[0].innerText.toLowerCase();
+
+        if (productName.includes(input)) {
+            tableRows[i].style.display = "";
+            tableRows[i + 1].style.display = "none"; // nasconde la nota durante la ricerca
+        } else {
+            tableRows[i].style.display = "none";
+            tableRows[i + 1].style.display = "none";
+        }
+    }
+}; 
     </script>
 </head>
 <body>
@@ -191,6 +207,7 @@
     <input type="text" id="brand" placeholder="Marca auto">
     <input type="text" id="model" placeholder="Modello auto">
     <button onclick="addProduct()">Aggiungi</button>
+    <input type="text" id="search" placeholder="Cerca prodotto..." oninput="searchProducts()">
     <table>
         <thead>
             <tr>
