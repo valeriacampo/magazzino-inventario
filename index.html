@@ -70,7 +70,27 @@
             cursor: pointer;
         }
         .note {
-            display: none;
+    display: none;
+    animation: fadeIn 0.5s ease-in-out;
+    background-color: #e7f3fe;
+    padding: 10px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.note textarea {
+    width: 90%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    resize: vertical;
+    font-family: inherit;
+    font-size: 14px;
+    background-color: white;
+}
         }
     </style>
 
